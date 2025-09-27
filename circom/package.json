@@ -1,0 +1,21 @@
+{
+  "name": "zkether-circuits",
+  "version": "1.0.0",
+  "description": "Circom circuits for zkETHer mobile app",
+  "scripts": {
+    "compile": "circom circuits/multiplier.circom --r1cs --wasm --sym -o build",
+    "compile-zkether": "circom circuits/zkether.circom --r1cs --wasm --sym -o build",
+    "setup": "snarkjs powersoftau new bn128 12 pot12_0000.ptau && snarkjs powersoftau contribute pot12_0000.ptau pot12_0001.ptau --name='First contribution' -v && snarkjs powersoftau prepare phase2 pot12_0001.ptau pot12_final.ptau -v",
+    "generate-zkey": "snarkjs groth16 setup build/multiplier.r1cs pot12_final.ptau multiplier_0000.zkey && snarkjs zkey contribute multiplier_0000.zkey multiplier_final.zkey --name='First contribution' -v",
+    "build": "npm run compile && npm run setup && npm run generate-zkey",
+    "test": "node scripts/test-circuit.js",
+    "clean": "rm -rf build/ *.ptau *.zkey verification_key.json"
+  },
+  "devDependencies": {
+    "snarkjs": "^0.7.0",
+    "circomlib": "^2.0.5"
+  },
+  "dependencies": {
+    "ffjavascript": "^0.2.60"
+  }
+}
