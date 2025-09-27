@@ -13,7 +13,7 @@ export interface KYCData {
   } | null;
 }
 
-export type OnboardingStep = 'circom' | 'welcome' | 'wallet' | 'kyc' | 'keys' | 'complete';
+export type OnboardingStep = 'welcome' | 'wallet' | 'kyc' | 'keys' | 'complete';
 
 export interface OnboardingContextType {
   currentStep: OnboardingStep;
@@ -75,7 +75,6 @@ export type RootStackParamList = {
 };
 
 export type OnboardingStackParamList = {
-  CircomProof: undefined;
   Welcome: undefined;
   WalletConnection: undefined;
   KYCVerification: undefined;

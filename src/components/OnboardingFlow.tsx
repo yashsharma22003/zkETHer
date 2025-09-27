@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, BackHandler } from 'react-native';
 import { useOnboarding } from '../contexts/OnboardingContext';
-import CircomProofScreen from './CircomProofScreen';
 import WelcomeScreen from './onboarding/WelcomeScreen';
 import WalletConnectionScreen from './onboarding/WalletConnectionScreen';
 import KYCVerificationScreen from './onboarding/KYCVerificationScreen';
@@ -14,7 +13,7 @@ export default function OnboardingFlow() {
 
   useEffect(() => {
     const backAction = () => {
-      const stepOrder = ['circom', 'welcome', 'wallet', 'kyc', 'keys', 'complete'];
+      const stepOrder = ['welcome', 'wallet', 'kyc', 'keys', 'complete'];
       const currentIndex = stepOrder.indexOf(currentStep);
       
       if (currentIndex > 0) {
@@ -30,8 +29,6 @@ export default function OnboardingFlow() {
 
   const renderCurrentScreen = () => {
     switch (currentStep) {
-      case 'circom':
-        return <CircomProofScreen onContinue={() => setCurrentStep('welcome')} />;
       case 'welcome':
         return <WelcomeScreen />;
       case 'wallet':
@@ -43,7 +40,7 @@ export default function OnboardingFlow() {
       case 'complete':
         return <HomeScreen />;
       default:
-        return <CircomProofScreen onContinue={() => setCurrentStep('welcome')} />;
+        return <WelcomeScreen />;
     }
   };
 

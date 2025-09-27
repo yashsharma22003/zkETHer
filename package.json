@@ -34,7 +34,9 @@
     "wagmi": "^2.17.1"
   },
   "devDependencies": {
+    "@types/node": "^24.5.2",
     "@types/react": "~18.2.79",
+    "@types/react-native": "^0.72.8",
     "babel-preset-expo": "~10.0.2"
   },
   "private": true
