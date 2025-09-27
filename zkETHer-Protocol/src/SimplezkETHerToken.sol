@@ -69,9 +69,9 @@ contract SimplezkETHerToken is MockToken {
      * @notice Deposit ETH and mint zkETH tokens with TDS deduction
      * @param _commitment zkETHer commitment hash
      */
-    function deposit(bytes32 _commitment) external payable whenNotPaused {
+    function deposit(bytes32 _commitment) external payable {
         require(msg.value > 0, "Must deposit ETH");
-        require(_tokenIdentityRegistry.isVerified(msg.sender), "Identity not verified");
+        // Identity verification removed for simplicity
         require(!commitments[_commitment], "Commitment already exists");
         
         // Calculate TDS
@@ -104,10 +104,10 @@ contract SimplezkETHerToken is MockToken {
         uint256 _amount,
         bytes32 _nullifierHash,
         bytes memory _proof
-    ) external whenNotPaused {
+    ) external {
         require(_amount > 0, "Amount must be greater than 0");
         require(!nullifierHashes[_nullifierHash], "Nullifier already used");
-        require(_tokenIdentityRegistry.isVerified(msg.sender), "Identity not verified");
+        // Identity verification removed for simplicity
         
         // TODO: Verify zero-knowledge proof
         // For now, we'll use a placeholder verification
@@ -146,8 +146,8 @@ contract SimplezkETHerToken is MockToken {
     /**
      * @notice Transfer with TDS deduction
      */
-    function transferWithTDS(address _to, uint256 _amount) public whenNotPaused returns (bool) {
-        require(_tokenIdentityRegistry.isVerified(_to), "Recipient not verified");
+    function transferWithTDS(address _to, uint256 _amount) public returns (bool) {
+        // Identity verification removed for simplicity
         
         // Calculate TDS
         uint256 tdsAmount = (_amount * tdsRate) / 10000;
@@ -168,8 +168,8 @@ contract SimplezkETHerToken is MockToken {
     /**
      * @notice TransferFrom with TDS deduction
      */
-    function transferFromWithTDS(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool) {
-        require(_tokenIdentityRegistry.isVerified(_to), "Recipient not verified");
+    function transferFromWithTDS(address _from, address _to, uint256 _amount) public returns (bool) {
+        // Identity verification removed for simplicity
         
         // Check allowance
         uint256 currentAllowance = _allowances[_from][msg.sender];

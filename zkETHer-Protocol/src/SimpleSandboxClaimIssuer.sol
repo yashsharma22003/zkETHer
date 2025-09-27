@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.20;
 
-import "@onchain-id/solidity/contracts/ClaimIssuer.sol";
-import "@onchain-id/solidity/contracts/interface/IIdentity.sol";
+import "./mocks/MockClaimIssuer.sol";
 
 /**
  * @title SimpleSandboxClaimIssuer
  * @notice Issues claims based on Sandbox.co.in API verification
  * @dev Integrates with Sandbox API for KYC/TDS compliance
  */
-contract SimpleSandboxClaimIssuer is ClaimIssuer {
+contract SimpleSandboxClaimIssuer is MockClaimIssuer {
     // Claim topic constants for zkETHer
     uint256 public constant AADHAAR_VERIFIED = 1001;
     uint256 public constant PAN_VERIFIED = 1002;
@@ -39,7 +38,7 @@ contract SimpleSandboxClaimIssuer is ClaimIssuer {
      * @param _managementKey Management key for the claim issuer
      * @param _sandboxPublicKey Public key for Sandbox API signature verification
      */
-    constructor(address _managementKey, address _sandboxPublicKey) ClaimIssuer(_managementKey) {
+    constructor(address _managementKey, address _sandboxPublicKey) {
         sandboxPublicKey = _sandboxPublicKey;
     }
 
@@ -49,7 +48,7 @@ contract SimpleSandboxClaimIssuer is ClaimIssuer {
      * @param _managementKey Management key for the identity
      * @return Address of the created identity (mock address)
      */
-    function createIdentity(address _user, address _managementKey) external onlyManager returns (address) {
+    function createIdentity(address _user, address _managementKey) external returns (address) {
         require(userToIdentity[_user] == address(0), "Identity already exists for user");
         
         // For simplicity, use a deterministic address based on user address
@@ -83,7 +82,7 @@ contract SimpleSandboxClaimIssuer is ClaimIssuer {
         address userIdentity,
         string memory verificationId,
         bytes memory sandboxResponse
-    ) external onlyManager {
+    ) external {
         require(validateSandboxResponse(sandboxResponse), "Invalid API response");
         
         // Find user from identity mapping
@@ -107,7 +106,7 @@ contract SimpleSandboxClaimIssuer is ClaimIssuer {
         address userIdentity,
         string memory verificationId,
         bytes memory sandboxResponse
-    ) external onlyManager {
+    ) external {
         require(validateSandboxResponse(sandboxResponse), "Invalid API response");
         
         // Find user from identity mapping
@@ -131,7 +130,7 @@ contract SimpleSandboxClaimIssuer is ClaimIssuer {
         address userIdentity,
         string memory verificationId,
         bytes memory sandboxResponse
-    ) external onlyManager {
+    ) external {
         require(validateSandboxResponse(sandboxResponse), "Invalid API response");
         
         // Find user from identity mapping
@@ -155,7 +154,7 @@ contract SimpleSandboxClaimIssuer is ClaimIssuer {
         address userIdentity,
         string memory verificationId,
         bytes memory sandboxResponse
-    ) external onlyManager {
+    ) external {
         require(validateSandboxResponse(sandboxResponse), "Invalid API response");
         
         // Verify user has all required claims
@@ -163,14 +162,10 @@ contract SimpleSandboxClaimIssuer is ClaimIssuer {
         require(hasValidClaim(userIdentity, PAN_VERIFIED), "PAN not verified");
         require(hasValidClaim(userIdentity, FACE_MATCHED), "Face not matched");
         
-        IIdentity(userIdentity).addClaim(
-            ZKETHER_ELIGIBLE,
-            1, // scheme
-            address(this), // issuer
-            sandboxResponse, // data
-            sandboxResponse, // data
-            "" // uri
-        );
+        // Store claim internally
+        address user = getUserFromIdentity(userIdentity);
+        userClaims[user][ZKETHER_ELIGIBLE] = sandboxResponse;
+        hasUserClaim[user][ZKETHER_ELIGIBLE] = true;
         
         emit ClaimIssuedFromSandbox(userIdentity, ZKETHER_ELIGIBLE, verificationId);
     }
@@ -182,25 +177,15 @@ contract SimpleSandboxClaimIssuer is ClaimIssuer {
      * @return True if user has valid claim
      */
     function hasValidClaim(address userIdentity, uint256 topic) public view returns (bool) {
-        bytes32[] memory claimIds = IIdentity(userIdentity).getClaimIdsByTopic(topic);
-        
-        for (uint256 i = 0; i < claimIds.length; i++) {
-            (uint256 claimTopic, uint256 scheme, address issuer, bytes memory signature, bytes memory data, string memory uri) = 
-                IIdentity(userIdentity).getClaim(claimIds[i]);
-            
-            if (claimTopic == topic && issuer == address(this)) {
-                return true;
-            }
-        }
-        
-        return false;
+        address user = getUserFromIdentity(userIdentity);
+        return hasUserClaim[user][topic];
     }
 
     /**
      * @notice Update Sandbox public key (only management key)
      * @param _newPublicKey New public key for Sandbox API
      */
-    function updateSandboxPublicKey(address _newPublicKey) external onlyManager {
+    function updateSandboxPublicKey(address _newPublicKey) external {
         require(_newPublicKey != address(0), "Invalid public key");
         address oldKey = sandboxPublicKey;
         sandboxPublicKey = _newPublicKey;

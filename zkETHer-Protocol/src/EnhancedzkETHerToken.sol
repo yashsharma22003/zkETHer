@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.20;
 
-import "../lib/ERC-3643/contracts/token/Token.sol";
+import "./mocks/MockToken.sol";
 import "./SandboxAPITypes.sol";
 import "./interfaces/IzkETHerToken.sol";
 
@@ -10,7 +10,7 @@ import "./interfaces/IzkETHerToken.sol";
  * @notice ERC-3643 compliant token with full Sandbox API integration and zkETHer privacy
  * @dev Extends Token with Sandbox TDS integration, verification tracking, and zkETHer proofs
  */
-contract EnhancedzkETHerToken is Token, IzkETHerToken {
+contract EnhancedzkETHerToken is MockToken, IzkETHerToken {
     using SandboxAPITypes for *;
     
     // TDS configuration
