@@ -1,0 +1,32 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+optimizer = true
+optimizer_runs = 1000
+via_ir = false
+solc_version = "0.8.20"
+auto_detect_solc = true
+allow_paths = ["*"]
+ignored_error_codes = ["license", "code-size", "missing-receive-ether"]
+remappings = [
+    "@onchain-id/solidity/contracts/=lib/onchain-id-solidity/contracts/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "@ERC-3643/contracts/=lib/ERC-3643/contracts/"
+]
+
+# Exclude problematic dependencies from compilation
+[profile.default.model_checker]
+contracts = {}
+
+[profile.default.ffi]
+enabled = false
+
+[rpc_endpoints]
+polygonAmoy = "${POLYGON_AMOY_RPC_URL}"
+
+[etherscan]
+polygonAmoy = { key = "${POLYGONSCAN_API_KEY}" }
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
