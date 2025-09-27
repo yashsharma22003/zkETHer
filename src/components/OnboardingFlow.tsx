@@ -4,8 +4,11 @@ import { globalStyles } from '../styles/globalStyles';
 import { colors, spacing, fontSize } from '../styles/theme';
 import Button from './ui/Button';
 import DotMatrix from './ui/DotMatrix';
+import { useWallet } from '../contexts/WalletContext';
 
 const OnboardingFlow: React.FC = () => {
+  const { isConnected, address, balance, connectWallet, disconnectWallet } = useWallet();
+
   return (
     <View style={[globalStyles.container, styles.container]}>
       {/* Status Bar */}
@@ -23,21 +26,53 @@ const OnboardingFlow: React.FC = () => {
           <Text style={styles.subtitle}>Privacy-preserving DeFi with KYC compliance</Text>
         </View>
 
+        {/* Wallet Status */}
+        {isConnected ? (
+          <View style={styles.walletInfo}>
+            <Text style={styles.walletLabel}>Connected Wallet</Text>
+            <Text style={styles.walletAddress}>
+              {address?.slice(0, 6)}...{address?.slice(-4)}
+            </Text>
+            <Text style={styles.walletBalance}>{balance} ETH</Text>
+          </View>
+        ) : null}
+
         <View style={styles.buttonSection}>
-          <Button
-            title="Get Started"
-            onPress={() => console.log('Get Started pressed')}
-            variant="default"
-            size="lg"
-          />
-          
-          <Button
-            title="Learn More"
-            onPress={() => console.log('Learn More pressed')}
-            variant="outline"
-            size="default"
-            style={styles.secondaryButton}
-          />
+          {!isConnected ? (
+            <>
+              <Button
+                title="Connect Wallet"
+                onPress={connectWallet}
+                variant="default"
+                size="lg"
+              />
+              
+              <Button
+                title="Learn More"
+                onPress={() => console.log('Learn More pressed')}
+                variant="outline"
+                size="default"
+                style={styles.secondaryButton}
+              />
+            </>
+          ) : (
+            <>
+              <Button
+                title="Start KYC Process"
+                onPress={() => console.log('Start KYC pressed')}
+                variant="default"
+                size="lg"
+              />
+              
+              <Button
+                title="Disconnect Wallet"
+                onPress={disconnectWallet}
+                variant="outline"
+                size="default"
+                style={styles.secondaryButton}
+              />
+            </>
+          )}
         </View>
       </View>
 
@@ -79,6 +114,37 @@ const styles = StyleSheet.create({
     color: colors['muted-foreground'],
     textAlign: 'center',
     fontFamily: 'Courier New',
+  },
+  
+  walletInfo: {
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  
+  walletLabel: {
+    fontSize: fontSize.sm,
+    color: colors['muted-foreground'],
+    fontFamily: 'Courier New',
+    marginBottom: spacing.xs,
+  },
+  
+  walletAddress: {
+    fontSize: fontSize.base,
+    color: colors.accent,
+    fontFamily: 'Courier New',
+    marginBottom: spacing.xs,
+  },
+  
+  walletBalance: {
+    fontSize: fontSize.lg,
+    color: colors.foreground,
+    fontFamily: 'Courier New',
+    fontWeight: '600',
   },
   
   buttonSection: {
