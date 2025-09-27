@@ -1,146 +1,150 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useOnboarding } from '../../contexts/OnboardingContext';
 import { globalStyles } from '../../styles/globalStyles';
-import { colors, spacing, fontSize } from '../../styles/theme';
+import { colors } from '../../styles/colors';
 import Button from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
-import DotMatrix from '../ui/DotMatrix';
+import DotMatrix from '../DotMatrix';
 
-interface WelcomeScreenProps {
-  onGetStarted: () => void;
-}
+export default function WelcomeScreen() {
+  const { nextStep } = useOnboarding();
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onGetStarted }) => {
   return (
     <View style={globalStyles.container}>
-      {/* Status Bar */}
-      <View style={globalStyles.statusBar}>
-        <Text style={globalStyles.statusBarText}>zkETHer Mobile</Text>
-        <Text style={globalStyles.statusBarText}>v1.0.0</Text>
-      </View>
-
-      {/* Main Content */}
+      {/* Main Content - Centered */}
       <View style={styles.content}>
-        <DotMatrix pattern="header" size="medium" />
-        
-        <View style={styles.titleSection}>
-          <Text style={styles.title}>zkETHer</Text>
-          <Text style={styles.subtitle}>Privacy-preserving DeFi with KYC compliance</Text>
+        {/* Header with App Title and Dots */}
+        <View style={styles.headerSection}>
+          <View style={styles.titleContainer}>
+            <DotMatrix pattern="header" size="sm" />
+            <Text style={styles.appTitle}>zkETHer</Text>
+            <DotMatrix pattern="header" size="sm" />
+          </View>
+          <Text style={styles.subtitle}>Private ETH Transfers</Text>
         </View>
 
-        {/* Feature Cards */}
+        {/* Feature Showcase Card */}
         <Card style={styles.featureCard}>
           <CardContent>
+            <View style={styles.dotMatrixContainer}>
+              <DotMatrix pattern="balance" />
+            </View>
+            
             <View style={styles.features}>
               <View style={styles.feature}>
-                <Text style={styles.featureIcon}>🔒</Text>
-                <Text style={styles.featureText}>Private Transactions</Text>
+                <View style={styles.pulseDot} />
+                <Text style={styles.featureText}>Send ETH Unlinkably</Text>
               </View>
               <View style={styles.feature}>
-                <Text style={styles.featureIcon}>🇮🇳</Text>
-                <Text style={styles.featureText}>India Compliant</Text>
+                <View style={styles.pulseDot} />
+                <Text style={styles.featureText}>Break Transaction Links</Text>
               </View>
               <View style={styles.feature}>
-                <Text style={styles.featureIcon}>⚡</Text>
-                <Text style={styles.featureText}>Zero-Knowledge Proofs</Text>
+                <View style={styles.pulseDot} />
+                <Text style={styles.featureText}>Protect Your Privacy</Text>
               </View>
             </View>
           </CardContent>
         </Card>
 
+        {/* Action Buttons */}
         <View style={styles.buttonSection}>
           <Button
-            title="Get Started"
-            onPress={onGetStarted}
-            variant="default"
-            size="lg"
+            title="GET STARTED"
+            onPress={nextStep}
+            style={styles.getStartedButton}
           />
           
-          <Button
-            title="Learn More"
-            onPress={() => console.log('Learn More pressed')}
-            variant="outline"
-            size="default"
-            style={styles.secondaryButton}
-          />
+          <View style={styles.secondaryButtons}>
+            <Button
+              title="Learn More"
+              variant="secondary"
+              onPress={() => console.log('Learn More pressed')}
+              style={styles.secondaryButton}
+            />
+            <Button
+              title="Skip"
+              variant="outline"
+              onPress={() => console.log('Skip pressed')}
+              style={styles.secondaryButton}
+            />
+          </View>
         </View>
-      </View>
-
-      {/* India Ready Badge */}
-      <View style={globalStyles.indiaReadyBadge}>
-        <Text style={globalStyles.indiaReadyText}>INDIA READY</Text>
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   content: {
     flex: 1,
+    paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.md,
   },
-  
-  titleSection: {
+  headerSection: {
     alignItems: 'center',
-    marginVertical: spacing.xl,
+    marginBottom: 32,
   },
-  
-  title: {
-    fontSize: fontSize['4xl'],
-    fontWeight: '700',
-    color: colors.foreground,
-    fontFamily: 'Courier New',
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  appTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    fontFamily: 'monospace',
     letterSpacing: 2,
-    marginBottom: spacing.sm,
   },
-  
   subtitle: {
-    fontSize: fontSize.base,
-    color: colors['muted-foreground'],
-    textAlign: 'center',
-    fontFamily: 'Courier New',
+    fontSize: 18,
+    color: colors.text.secondary,
+    fontWeight: '500',
   },
-  
   featureCard: {
-    marginVertical: spacing.lg,
-    backgroundColor: colors.card,
+    marginBottom: 32,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    width: '100%',
   },
-  
+  dotMatrixContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   features: {
-    gap: spacing.md,
+    gap: 12,
   },
-  
   feature: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 12,
   },
-  
-  featureIcon: {
-    fontSize: 20,
+  pulseDot: {
+    width: 8,
+    height: 8,
+    backgroundColor: colors.accent,
+    borderRadius: 4,
   },
-  
   featureText: {
-    fontSize: fontSize.base,
-    color: colors.foreground,
-    fontFamily: 'Courier New',
+    fontSize: 14,
+    color: colors.text.secondary,
   },
-  
   buttonSection: {
     width: '100%',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.lg,
+    gap: 16,
   },
-  
+  getStartedButton: {
+    paddingVertical: 24,
+  },
+  secondaryButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   secondaryButton: {
-    marginTop: spacing.sm,
+    flex: 1,
   },
 });
-
-export default WelcomeScreen;
