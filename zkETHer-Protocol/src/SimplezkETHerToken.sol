@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.20;
 
-import "./mocks/MockToken.sol";
+import "../lib/ERC-3643/contracts/token/Token.sol";
 
 /**
  * @title SimplezkETHerToken
  * @notice Simplified ERC-3643 compliant token with zkETHer integration and TDS support
  * @dev Extends standard Token with deposit/withdrawal functions and TDS calculation
  */
-contract SimplezkETHerToken is MockToken {
+contract SimplezkETHerToken is Token {
     // TDS rate (1% = 100 basis points)
     uint256 public tdsRate = 100;
     
@@ -69,9 +69,9 @@ contract SimplezkETHerToken is MockToken {
      * @notice Deposit ETH and mint zkETH tokens with TDS deduction
      * @param _commitment zkETHer commitment hash
      */
-    function deposit(bytes32 _commitment) external payable {
+    function deposit(bytes32 _commitment) external payable whenNotPaused {
         require(msg.value > 0, "Must deposit ETH");
-        // Identity verification removed for simplicity
+        require(_tokenIdentityRegistry.isVerified(msg.sender), "Identity not verified");
         require(!commitments[_commitment], "Commitment already exists");
         
         // Calculate TDS
@@ -104,10 +104,10 @@ contract SimplezkETHerToken is MockToken {
         uint256 _amount,
         bytes32 _nullifierHash,
         bytes memory _proof
-    ) external {
+    ) external whenNotPaused {
         require(_amount > 0, "Amount must be greater than 0");
         require(!nullifierHashes[_nullifierHash], "Nullifier already used");
-        // Identity verification removed for simplicity
+        require(_tokenIdentityRegistry.isVerified(msg.sender), "Identity not verified");
         
         // TODO: Verify zero-knowledge proof
         // For now, we'll use a placeholder verification
@@ -146,8 +146,8 @@ contract SimplezkETHerToken is MockToken {
     /**
      * @notice Transfer with TDS deduction
      */
-    function transferWithTDS(address _to, uint256 _amount) public returns (bool) {
-        // Identity verification removed for simplicity
+    function transferWithTDS(address _to, uint256 _amount) public whenNotPaused returns (bool) {
+        require(_tokenIdentityRegistry.isVerified(_to), "Recipient not verified");
         
         // Calculate TDS
         uint256 tdsAmount = (_amount * tdsRate) / 10000;
@@ -168,8 +168,8 @@ contract SimplezkETHerToken is MockToken {
     /**
      * @notice TransferFrom with TDS deduction
      */
-    function transferFromWithTDS(address _from, address _to, uint256 _amount) public returns (bool) {
-        // Identity verification removed for simplicity
+    function transferFromWithTDS(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool) {
+        require(_tokenIdentityRegistry.isVerified(_to), "Recipient not verified");
         
         // Check allowance
         uint256 currentAllowance = _allowances[_from][msg.sender];
