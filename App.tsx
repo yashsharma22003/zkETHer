@@ -1,34 +1,27 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
+import OnboardingFlow from './src/components/OnboardingFlow';
+import { globalStyles } from './src/styles/globalStyles';
+import { colors } from './src/styles/theme';
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>zkETHer Mobile</Text>
-      <Text style={styles.subtitle}>Privacy-preserving DeFi with KYC compliance</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <SafeAreaView style={globalStyles.safeArea}>
+        <StatusBar style="light" backgroundColor={colors.background} />
+        <View style={styles.container}>
+          <OnboardingFlow />
+        </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
+    backgroundColor: colors.background,
   },
 });
