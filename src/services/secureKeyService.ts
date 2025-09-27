@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import 'react-native-get-random-values';
+import { generateHexKeyPair } from './libsodiumHelper.js';
 
 // React Native crypto is available via the polyfill
 // No need to import Node.js crypto module
@@ -24,29 +25,17 @@ class SecureKeyService {
   private readonly KEY_INFO_KEY = 'zkether_key_info';
 
   /**
-   * Generate a cryptographically secure key pair for zkETHer protocol
-   * Uses Web Crypto API for secure random key generation
+   * Generate a cryptographically secure X25519 key pair for zkETHer protocol
+   * Uses libsodium for ephemeral X25519 keypair generation
    */
   async generateKeyPair(): Promise<ZkETHerKeyPair> {
     try {
-      console.log('🔐 Generating secure zkETHer key pair...');
+      console.log('🔐 Generating secure zkETHer X25519 key pair...');
 
-      // Generate 32 bytes (256 bits) of cryptographically secure random data for private key
-      const privateKeyBytes = new Uint8Array(32);
-      crypto.getRandomValues(privateKeyBytes);
-
-      // Convert to hex string
-      const privateKey = '0x' + Array.from(privateKeyBytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-
-      // For zkETHer protocol, we'll derive the public key from private key
-      // This is a simplified approach - in production you might want to use secp256k1
-      const publicKeyBytes = new Uint8Array(32);
-      crypto.getRandomValues(publicKeyBytes);
-      const publicKey = '0x' + Array.from(publicKeyBytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+      // Generate ephemeral X25519 keypair using libsodium helper
+      const cryptoKeyPair = await generateHexKeyPair();
+      const publicKey = cryptoKeyPair.publicKey; // this is published on-chain
+      const privateKey = cryptoKeyPair.privateKey;
 
       // Generate unique key ID
       const keyIdBytes = new Uint8Array(16);
@@ -55,23 +44,25 @@ class SecureKeyService {
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
 
-      const keyPair: ZkETHerKeyPair = {
+      const createdAt = new Date().toISOString();
+
+      const zkETHerKeyPair: ZkETHerKeyPair = {
         publicKey,
         privateKey,
         keyId,
-        createdAt: new Date().toISOString()
+        createdAt
       };
 
-      console.log('✅ Key pair generated successfully', {
+      console.log('✅ X25519 key pair generated successfully', {
         keyId,
         publicKey: publicKey.slice(0, 10) + '...',
-        createdAt: keyPair.createdAt
+        createdAt
       });
 
-      return keyPair;
+      return zkETHerKeyPair;
     } catch (error) {
-      console.error('❌ Failed to generate key pair:', error);
-      throw new Error('Failed to generate secure key pair');
+      console.error('❌ Failed to generate X25519 key pair:', error);
+      throw new Error('Failed to generate secure X25519 key pair');
     }
   }
 

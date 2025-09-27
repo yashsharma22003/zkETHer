@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { OnboardingContextType, KYCData, OnboardingStep } from '../types/index';
+import { zkETHerEventListener } from '../services/zkETHerEventListener';
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
@@ -20,6 +21,32 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
   useEffect(() => {
     loadPersistedData();
   }, []);
+
+  // Start zkETHer event listener for onboarded users
+  useEffect(() => {
+    const startBackgroundListener = async () => {
+      // Only start if user has completed onboarding (has keys and KYC)
+      if (currentStep === 'complete' && isKYCCompleted) {
+        try {
+          console.log('🚀 Starting background zkETHer event listener for onboarded user');
+          await zkETHerEventListener.startListening();
+        } catch (error) {
+          console.error('❌ Failed to start background event listener:', error);
+          // Don't block app startup if event listener fails
+        }
+      }
+    };
+
+    startBackgroundListener();
+
+    // Cleanup on unmount
+    return () => {
+      if (zkETHerEventListener.isListening) {
+        zkETHerEventListener.stopListening();
+        console.log('🛑 Stopped background zkETHer event listener');
+      }
+    };
+  }, [currentStep, isKYCCompleted]);
 
   const loadPersistedData = async () => {
     try {

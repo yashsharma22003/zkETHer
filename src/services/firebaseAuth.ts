@@ -1,115 +1,82 @@
-import { auth } from '../config/firebase';
 import { 
   signInWithPhoneNumber, 
-  PhoneAuthProvider, 
-  signInWithCredential,
-  RecaptchaVerifier,
-  ApplicationVerifier,
-  ConfirmationResult
+  ConfirmationResult, 
+  User,
+  onAuthStateChanged as firebaseOnAuthStateChanged,
+  signOut as firebaseSignOut,
+  RecaptchaVerifier
 } from 'firebase/auth';
+import { auth } from '../config/firebase';
+
+export interface OTPConfirmation {
+  confirm: (code: string) => Promise<any>;
+}
 
 export class FirebaseAuthService {
-  private verificationId: string | null = null;
-  private recaptchaVerifier: ApplicationVerifier | null = null;
-  private confirmationResult: ConfirmationResult | null = null;
-
-  // Set reCAPTCHA verifier (required for web compatibility)
-  setRecaptchaVerifier(verifier: ApplicationVerifier) {
-    this.recaptchaVerifier = verifier;
-  }
-
-  // Send OTP to phone number
-  async sendOTP(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
+  /**
+   * Send OTP to phone number
+   * @param phoneNumber Phone number with country code (e.g., '+919876543210')
+   * @param recaptchaVerifier reCAPTCHA verifier for React Native
+   * @returns Promise that resolves to confirmation object
+   */
+  static async sendOTP(phoneNumber: string, recaptchaVerifier: any): Promise<ConfirmationResult> {
     try {
-      // Format phone number to international format
-      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+      const formattedPhone = phoneNumber.startsWith('+91') 
+        ? phoneNumber 
+        : `+91${phoneNumber}`;
       
-      if (!this.recaptchaVerifier) {
-        // For demo mode - simulate success
-        console.log('Demo mode: OTP would be sent to', formattedPhone);
-        return { success: true };
-      }
-
-      const confirmationResult = await signInWithPhoneNumber(
-        auth, 
-        formattedPhone, 
-        this.recaptchaVerifier
-      );
-      
-      this.confirmationResult = confirmationResult;
-      this.verificationId = confirmationResult.verificationId;
-      
-      return { success: true };
-    } catch (error: any) {
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier);
+      return confirmation;
+    } catch (error) {
       console.error('Error sending OTP:', error);
-      
-      // Fallback to demo mode for development
-      if (error.code === 'auth/quota-exceeded' || error.code === 'auth/too-many-requests') {
-        console.log('Demo mode: Firebase quota exceeded, using demo OTP');
-        return { success: true };
-      }
-      
-      return { 
-        success: false, 
-        error: error.message || 'Failed to send OTP' 
-      };
+      throw new Error('Failed to send OTP. Please try again.');
     }
   }
 
-  // Verify OTP code
-  async verifyOTP(otpCode: string): Promise<{ success: boolean; error?: string }> {
+  /**
+   * Verify OTP code
+   * @param confirmation Confirmation object from sendOTP
+   * @param code 6-digit OTP code
+   * @returns Promise that resolves to user credential
+   */
+  static async verifyOTP(
+    confirmation: ConfirmationResult, 
+    code: string
+  ): Promise<any> {
     try {
-      // Demo mode - accept specific codes
-      if (!this.confirmationResult || !this.verificationId) {
-        // Demo verification - accept 123456 or any 6-digit code
-        if (otpCode === '123456' || otpCode.length === 6) {
-          console.log('Demo mode: OTP verification successful');
-          return { success: true };
-        } else {
-          return { success: false, error: 'Invalid demo OTP. Use 123456 or any 6-digit code.' };
-        }
-      }
-
-      // Real Firebase verification
-      const credential = PhoneAuthProvider.credential(this.verificationId, otpCode);
-      const userCredential = await signInWithCredential(auth, credential);
-      
-      console.log('Phone authentication successful:', userCredential.user.uid);
-      
-      return { success: true };
-    } catch (error: any) {
+      const userCredential = await confirmation.confirm(code);
+      return userCredential;
+    } catch (error) {
       console.error('Error verifying OTP:', error);
-      
-      // Fallback to demo mode
-      if (otpCode.length === 6) {
-        console.log('Demo mode: OTP verification fallback');
-        return { success: true };
-      }
-      
-      return { 
-        success: false, 
-        error: error.message || 'Invalid OTP code' 
-      };
+      throw new Error('Invalid OTP code. Please try again.');
     }
   }
 
-  // Get current user
-  getCurrentUser() {
+  /**
+   * Get current user
+   */
+  static getCurrentUser(): User | null {
     return auth.currentUser;
   }
 
-  // Sign out
-  async signOut(): Promise<void> {
-    await auth.signOut();
-    this.verificationId = null;
-    this.confirmationResult = null;
+  /**
+   * Sign out current user
+   */
+  static async signOut(): Promise<void> {
+    try {
+      await firebaseSignOut(auth);
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw new Error('Failed to sign out.');
+    }
   }
 
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    return !!auth.currentUser;
+  /**
+   * Listen to auth state changes
+   */
+  static onAuthStateChanged(callback: (user: User | null) => void) {
+    return firebaseOnAuthStateChanged(auth, callback);
   }
 }
 
-export const firebaseAuthService = new FirebaseAuthService();
 export default FirebaseAuthService;
