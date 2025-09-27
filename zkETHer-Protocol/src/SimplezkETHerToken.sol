@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.20;
 
-import "../lib/ERC-3643/contracts/token/Token.sol";
+import "./mocks/MockToken.sol";
 
 /**
  * @title SimplezkETHerToken
  * @notice Simplified ERC-3643 compliant token with zkETHer integration and TDS support
  * @dev Extends standard Token with deposit/withdrawal functions and TDS calculation
  */
-contract SimplezkETHerToken is Token {
+contract SimplezkETHerToken is MockToken {
     // TDS rate (1% = 100 basis points)
     uint256 public tdsRate = 100;
     

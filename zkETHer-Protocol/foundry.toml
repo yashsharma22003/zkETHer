@@ -20,8 +20,7 @@ remappings = [
 [profile.default.model_checker]
 contracts = {}
 
-[profile.default.ffi]
-enabled = false
+ffi = false
 
 [rpc_endpoints]
 polygonAmoy = "${POLYGON_AMOY_RPC_URL}"
