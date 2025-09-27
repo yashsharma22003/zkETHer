@@ -1,34 +1,72 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { globalStyles } from '../../styles/globalStyles';
 import { colors } from '../../styles/colors';
 import Button from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 
+interface DocumentData {
+  uri: string;
+  type: 'image' | 'pdf';
+  name: string;
+  size: number;
+}
+
 interface DocumentUploadScreenProps {
-  onNext: (data: { aadhaarDocument: string | null; panDocument: string | null }) => void;
+  onNext: (data: { aadhaarDocument: DocumentData | null; panDocument: DocumentData | null }) => void;
   onBack: () => void;
 }
 
 export default function DocumentUploadScreen({ onNext, onBack }: DocumentUploadScreenProps) {
   const [documents, setDocuments] = useState({
-    aadhaarDocument: null as string | null,
-    panDocument: null as string | null,
+    aadhaarDocument: null as DocumentData | null,
+    panDocument: null as DocumentData | null,
+  });
+  const [uploading, setUploading] = useState({
+    aadhaar: false,
+    pan: false,
   });
 
+  // Create secure directory for KYC documents
+  const createKYCDirectory = async () => {
+    const kycDir = `${FileSystem.documentDirectory}kyc_documents/`;
+    const dirInfo = await FileSystem.getInfoAsync(kycDir);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(kycDir, { intermediates: true });
+    }
+    return kycDir;
+  };
+
+  // Save file to secure location
+  const saveFileSecurely = async (sourceUri: string, fileName: string): Promise<string> => {
+    const kycDir = await createKYCDirectory();
+    const destinationUri = `${kycDir}${fileName}`;
+    await FileSystem.copyAsync({
+      from: sourceUri,
+      to: destinationUri,
+    });
+    return destinationUri;
+  };
+
   const handleDocumentUpload = (documentType: 'aadhaar' | 'pan') => {
-    // Mock document upload - in real app this would open camera/file picker
     Alert.alert(
       'Upload Document',
       `Choose how to upload your ${documentType === 'aadhaar' ? 'Aadhaar Card' : 'PAN Card'}`,
       [
         {
           text: 'Take Photo',
-          onPress: () => mockUpload(documentType, 'photo'),
+          onPress: () => takePhoto(documentType),
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: () => pickFromGallery(documentType),
         },
         {
           text: 'Upload PDF',
-          onPress: () => mockUpload(documentType, 'pdf'),
+          onPress: () => pickDocument(documentType),
         },
         {
           text: 'Cancel',
@@ -38,14 +76,125 @@ export default function DocumentUploadScreen({ onNext, onBack }: DocumentUploadS
     );
   };
 
-  const mockUpload = (documentType: 'aadhaar' | 'pan', uploadType: 'photo' | 'pdf') => {
-    // Mock successful upload
-    setTimeout(() => {
-      setDocuments(prev => ({
-        ...prev,
-        [`${documentType}Document`]: `${documentType}_${uploadType}_${Date.now()}`,
-      }));
-    }, 1000);
+  const takePhoto = async (documentType: 'aadhaar' | 'pan') => {
+    try {
+      setUploading(prev => ({ ...prev, [documentType]: true }));
+
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Camera permission is required to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const fileName = `${documentType}_${Date.now()}.jpg`;
+        const secureUri = await saveFileSecurely(asset.uri, fileName);
+        
+        const documentData: DocumentData = {
+          uri: secureUri,
+          type: 'image',
+          name: fileName,
+          size: asset.fileSize || 0,
+        };
+
+        setDocuments(prev => ({
+          ...prev,
+          [`${documentType}Document`]: documentData,
+        }));
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    } finally {
+      setUploading(prev => ({ ...prev, [documentType]: false }));
+    }
+  };
+
+  const pickFromGallery = async (documentType: 'aadhaar' | 'pan') => {
+    try {
+      setUploading(prev => ({ ...prev, [documentType]: true }));
+
+      // Request media library permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Gallery permission is required to select photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const fileName = `${documentType}_${Date.now()}.jpg`;
+        const secureUri = await saveFileSecurely(asset.uri, fileName);
+        
+        const documentData: DocumentData = {
+          uri: secureUri,
+          type: 'image',
+          name: fileName,
+          size: asset.fileSize || 0,
+        };
+
+        setDocuments(prev => ({
+          ...prev,
+          [`${documentType}Document`]: documentData,
+        }));
+      }
+    } catch (error) {
+      console.error('Error picking from gallery:', error);
+      Alert.alert('Error', 'Failed to select image. Please try again.');
+    } finally {
+      setUploading(prev => ({ ...prev, [documentType]: false }));
+    }
+  };
+
+  const pickDocument = async (documentType: 'aadhaar' | 'pan') => {
+    try {
+      setUploading(prev => ({ ...prev, [documentType]: true }));
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const fileExtension = asset.name.split('.').pop()?.toLowerCase();
+        const fileName = `${documentType}_${Date.now()}.${fileExtension}`;
+        const secureUri = await saveFileSecurely(asset.uri, fileName);
+        
+        const documentData: DocumentData = {
+          uri: secureUri,
+          type: fileExtension === 'pdf' ? 'pdf' : 'image',
+          name: fileName,
+          size: asset.size || 0,
+        };
+
+        setDocuments(prev => ({
+          ...prev,
+          [`${documentType}Document`]: documentData,
+        }));
+      }
+    } catch (error) {
+      console.error('Error picking document:', error);
+      Alert.alert('Error', 'Failed to select document. Please try again.');
+    } finally {
+      setUploading(prev => ({ ...prev, [documentType]: false }));
+    }
   };
 
   const isFormValid = documents.aadhaarDocument && documents.panDocument;
@@ -60,21 +209,38 @@ export default function DocumentUploadScreen({ onNext, onBack }: DocumentUploadS
     title: string,
     documentType: 'aadhaar' | 'pan',
     extractedInfo: string,
-    isUploaded: boolean
+    document: DocumentData | null,
+    isUploading: boolean
   ) => (
     <Card style={styles.documentCard}>
       <CardContent>
         <Text style={styles.documentTitle}>{title}</Text>
         
         <TouchableOpacity
-          style={[styles.uploadArea, isUploaded && styles.uploadAreaSuccess]}
+          style={[styles.uploadArea, document && styles.uploadAreaSuccess]}
           onPress={() => handleDocumentUpload(documentType)}
+          disabled={isUploading}
         >
           <View style={styles.uploadContent}>
-            {isUploaded ? (
+            {isUploading ? (
               <>
-                <Text style={styles.uploadIconSuccess}>✓</Text>
-                <Text style={styles.uploadTextSuccess}>Document Uploaded</Text>
+                <ActivityIndicator size="large" color={colors.accent} />
+                <Text style={styles.uploadText}>Uploading...</Text>
+              </>
+            ) : document ? (
+              <>
+                {document.type === 'image' && (
+                  <Image source={{ uri: document.uri }} style={styles.documentPreview} />
+                )}
+                {document.type === 'pdf' && (
+                  <Text style={styles.uploadIconSuccess}>📄</Text>
+                )}
+                <Text style={styles.uploadTextSuccess}>
+                  {document.type === 'pdf' ? 'PDF Uploaded' : 'Photo Uploaded'}
+                </Text>
+                <Text style={styles.uploadSubtext}>
+                  {document.name} • {(document.size / 1024).toFixed(1)}KB
+                </Text>
                 <Text style={styles.uploadSubtext}>Tap to change</Text>
               </>
             ) : (
@@ -116,7 +282,8 @@ export default function DocumentUploadScreen({ onNext, onBack }: DocumentUploadS
           'Aadhaar Card',
           'aadhaar',
           'Name, DOB, Aadhaar number, Address',
-          !!documents.aadhaarDocument
+          documents.aadhaarDocument,
+          uploading.aadhaar
         )}
 
         {/* PAN Card Upload */}
@@ -124,7 +291,8 @@ export default function DocumentUploadScreen({ onNext, onBack }: DocumentUploadS
           'PAN Card',
           'pan',
           'Name, PAN number, Father\'s name, DOB',
-          !!documents.panDocument
+          documents.panDocument,
+          uploading.pan
         )}
 
         {/* Continue Button */}
@@ -251,6 +419,13 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontFamily: 'monospace',
     lineHeight: 16,
+  },
+  documentPreview: {
+    width: 80,
+    height: 60,
+    borderRadius: 4,
+    marginBottom: 8,
+    backgroundColor: colors.background,
   },
   continueButton: {
     marginTop: 20,

@@ -1,18 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { globalStyles } from '../../styles/globalStyles';
 import { colors } from '../../styles/colors';
 import Button from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 
+interface BiometricData {
+  uri: string;
+  name: string;
+  size: number;
+}
+
 interface BiometricVerificationScreenProps {
-  onNext: (biometricData: { selfieData: string }) => void;
+  onNext: (biometricData: { selfieData: BiometricData }) => void;
   onBack: () => void;
 }
 
 export default function BiometricVerificationScreen({ onNext, onBack }: BiometricVerificationScreenProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [selfieCapture, setSelfieCapture] = useState<string | null>(null);
+  const [selfieCapture, setSelfieCapture] = useState<BiometricData | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -33,15 +41,66 @@ export default function BiometricVerificationScreen({ onNext, onBack }: Biometri
     ).start();
   }, [pulseAnim]);
 
-  const handleTakeSelfie = () => {
-    // Mock selfie capture - in real app this would open camera
-    setIsCameraActive(true);
-    
-    // Simulate camera capture after 2 seconds
-    setTimeout(() => {
-      setSelfieCapture(`selfie_${Date.now()}`);
+  // Create secure directory for biometric data
+  const createBiometricDirectory = async () => {
+    const biometricDir = `${FileSystem.documentDirectory}biometric_data/`;
+    const dirInfo = await FileSystem.getInfoAsync(biometricDir);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(biometricDir, { intermediates: true });
+    }
+    return biometricDir;
+  };
+
+  // Save selfie to secure location
+  const saveSelfieSecurely = async (sourceUri: string, fileName: string): Promise<string> => {
+    const biometricDir = await createBiometricDirectory();
+    const destinationUri = `${biometricDir}${fileName}`;
+    await FileSystem.copyAsync({
+      from: sourceUri,
+      to: destinationUri,
+    });
+    return destinationUri;
+  };
+
+  const handleTakeSelfie = async () => {
+    try {
+      setIsCameraActive(true);
+
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Camera permission is required to take selfie.');
+        setIsCameraActive(false);
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.8,
+        cameraType: ImagePicker.CameraType.front, // Use front camera for selfies
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const fileName = `selfie_${Date.now()}.jpg`;
+        const secureUri = await saveSelfieSecurely(asset.uri, fileName);
+        
+        const biometricData: BiometricData = {
+          uri: secureUri,
+          name: fileName,
+          size: asset.fileSize || 0,
+        };
+
+        setSelfieCapture(biometricData);
+      }
+    } catch (error) {
+      console.error('Error taking selfie:', error);
+      Alert.alert('Error', 'Failed to take selfie. Please try again.');
+    } finally {
       setIsCameraActive(false);
-    }, 2000);
+    }
   };
 
   const handleContinue = () => {
@@ -60,8 +119,11 @@ export default function BiometricVerificationScreen({ onNext, onBack }: Biometri
           </View>
         ) : selfieCapture ? (
           <View style={styles.cameraSuccess}>
-            <Text style={styles.cameraSuccessIcon}>✓</Text>
+            <Image source={{ uri: selfieCapture.uri }} style={styles.selfiePreview} />
             <Text style={styles.cameraSuccessText}>Selfie Captured</Text>
+            <Text style={styles.selfieInfo}>
+              {selfieCapture.name} • {(selfieCapture.size / 1024).toFixed(1)}KB
+            </Text>
           </View>
         ) : (
           <View style={styles.cameraPlaceholder}>
@@ -243,6 +305,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.accent,
     fontFamily: 'monospace',
+    marginTop: 8,
+  },
+  selfiePreview: {
+    width: 180,
+    height: 135,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+  },
+  selfieInfo: {
+    fontSize: 10,
+    color: colors.text.secondary,
+    fontFamily: 'monospace',
+    marginTop: 4,
   },
   faceGuide: {
     position: 'absolute',
