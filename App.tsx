@@ -6,10 +6,10 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { AppKit } from '@reown/appkit-wagmi-react-native';
 import { OnboardingProvider } from './src/contexts/OnboardingContext';
 import { WalletProvider } from './src/contexts/WalletContext';
-import { colors } from './src/styles/theme';
+import { colors } from './src/styles/colors';
 import { globalStyles } from './src/styles/globalStyles';
 import { StyleSheet, View, Platform } from 'react-native';
-import AuthenticationFlow from './src/components/AuthenticationFlow';
+import OnboardingFlow from './src/components/OnboardingFlow';
 import { wagmiConfig, queryClient, initializeAppKit } from './src/config/walletConnect';
 
 export default function App() {
@@ -31,7 +31,7 @@ export default function App() {
               <OnboardingProvider>
                 <StatusBar style="light" backgroundColor={colors.background} />
                 <View style={styles.container}>
-                  <AuthenticationFlow />
+                  <OnboardingFlow />
                   <AppKit />
                 </View>
               </OnboardingProvider>

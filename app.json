@@ -1,33 +1,63 @@
 {
   "expo": {
-    "name": "mobile-zkether",
+    "name": "mobile-zkETHer",
     "slug": "mobile-zkether",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mobilezketherapp"
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "metamask",
+          "trust",
+          "safe",
+          "rainbow",
+          "uniswap",
+          "coinbase",
+          "exodus",
+          "phantom"
+        ]
+      },
+      "bundleIdentifier": "com.anonymous.mobilezkether"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#ffffff"
       },
-      "package": "com.mobilezketherapp"
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "zkether"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "package": "com.anonymous.mobilezkether"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": []
+    "scheme": "zkether",
+    "plugins": [
+      "expo-secure-store",
+      "expo-asset"
+    ]
   }
 }

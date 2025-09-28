@@ -1,12 +1,91 @@
-node_modules/
-.expo/
+# Rust
+target/
+Cargo.lock
+
+# Build outputs
+build/
 dist/
-npm-debug.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
-web-build/
+
+# Node.js / React Native
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# React Native specific
+react-native/node_modules/
+react-native/.expo/
+react-native/.expo-shared/
+react-native/dist/
+react-native/web-build/
+
+# Android
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+*.apk
+*.aab
+
+# iOS
+ios/build/
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/DerivedData/
+*.ipa
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Environment variables
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Mopro specific
+MoproiOSBindings/
+MoproAndroidBindings/jniLibs/
+MoproAndroidBindings/uniffi/
+*.wasm
+*.so
+*.dylib
+*.dll
+
+# Test vectors and circuits (if large)
+test-vectors/*.zkey
+test-vectors/*.wasm
+circuits/*.zkey
+circuits/*.wasm
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
